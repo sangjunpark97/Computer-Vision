@@ -1,0 +1,285 @@
+import sklearn.datasets as dataset
+mnist=dataset.fetch_openml('mnist_784')
+#iris=dataset.load_iris()
+
+import numpy as np
+import matplotlib.pyplot as plt
+
+mnist_data = mnist.data
+mnist_target= mnist.target
+print('mnist data shape :',mnist_data.shape)
+print('mnist target shape :',mnist_target.shape)
+
+random_index=np.random.choice(70000,1)
+mnist_sample=mnist_data[random_index].reshape(28,28)
+plt.imshow(mnist_sample, cmap='gray')
+
+data,target=mnist_data[0:10000], mnist_target[0:10000]
+
+
+
+# 10000장에 대한 4x8 vector
+HOG=np.zeros((10000,4,8))
+for i in range(10000):
+  X=data[i]
+  X=X.reshape(28,28)
+  X0,X1,X2,X3=X[0:14,0:14],X[0:14,14:28],X[14:28,0:14],X[14:28,14:28]
+  sobel_mx=np.array([[-1,0,1],[-1,0,1],[-1,0,1]])
+  sobel_my=np.array([[-1,-1,-1],[0,0,0],[1,1,1]])
+  grad_map_dx=np.zeros((28,28))
+  grad_map_dy=np.zeros((28,28))
+  strength_map=np.zeros((28,28),dtype='float')
+  orient_map=np.zeros((28,28),dtype='int')
+  X=np.pad(X,((1,1),(1,1)),'edge')
+  
+  for y in range(0,28):
+    for x in range(0,28):
+      grad_map_dx[y,x]=np.sum(sobel_mx[0:3,0:3]*X[y:y+3,x:x+3])
+      grad_map_dy[y,x]=np.sum(sobel_my[0:3,0:3]*X[y:y+3,x:x+3])
+      strength_map[y,x]=math.sqrt(grad_map_dx[y,x]**2+grad_map_dy[y,x]**2)]
+      # division by zero 를 피하기 위하여 실시
+      if(grad_map_dy[y,x]==0):
+        grad_map_dy[y,x]=1
+      if(grad_map_dx[y,x]==0):
+        grad_map_dx[y,x]=1
+      # orient map 구하기
+      orient_map[y,x]=(math.atan(grad_map_dy[y,x]/grad_map_dx[y,x])*(180/3.14))+90
+
+# 10000장에 대한 4x8 vector
+# HOG=np.zeros((10000,4,8)) 위에서 선언함
+  for y in range(0,28):
+    for x in range(0,28):
+      # 0~14 x 0~14 부분
+      if(y <14 and x<14):
+        # orient map 에서 orient 를 확인하고 strength map에서 값을 그 위치에 sum.
+        if(orient_map[y,x]>0 and orient_map[y,x]<22):
+          HOG[i][0][0]+=strength_map[y,x]
+        if(orient_map[y,x]>22 and orient_map[y,x]<44):
+          HOG[i][0][1]+=strength_map[y,x]
+        if(orient_map[y,x]>44 and orient_map[y,x]<66):
+          HOG[i][0][2]+=strength_map[y,x]
+        if(orient_map[y,x]>66 and orient_map[y,x]<88):
+          HOG[i][0][3]+=strength_map[y,x]
+        if(orient_map[y,x]>88 and orient_map[y,x]<110):
+          HOG[i][0][4]+=strength_map[y,x]
+        if(orient_map[y,x]>110 and orient_map[y,x]<132):
+          HOG[i][0][5]+=strength_map[y,x]
+        if(orient_map[y,x]>132 and orient_map[y,x]<154):
+          HOG[i][0][6]+=strength_map[y,x]
+        if(orient_map[y,x]>154 and orient_map[y,x]<180):
+          HOG[i][0][7]+=strength_map[y,x]
+      if(y >14 and x<14):
+        if(orient_map[y,x]>0 and orient_map[y,x]<22):
+          HOG[i][1][0]+=strength_map[y,x]
+        if(orient_map[y,x]>22 and orient_map[y,x]<44):
+          HOG[i][1][1]+=strength_map[y,x]
+        if(orient_map[y,x]>44 and orient_map[y,x]<66):
+          HOG[i][1][2]+=strength_map[y,x]
+        if(orient_map[y,x]>66 and orient_map[y,x]<88):
+          HOG[1][3]+=strength_map[y,x]
+        if(orient_map[y,x]>88 and orient_map[y,x]<110):
+          HOG[i][1][4]+=strength_map[y,x]
+        if(orient_map[y,x]>110 and orient_map[y,x]<132):
+          HOG[i][1][5]+=strength_map[y,x]
+        if(orient_map[y,x]>132 and orient_map[y,x]<154):
+          HOG[i][1][6]+=strength_map[y,x]
+        if(orient_map[y,x]>154 and orient_map[y,x]<180):
+          HOG[i][1][7]+=strength_map[y,x]
+      if(y <14 and x>14):
+        if(orient_map[y,x]>0 and orient_map[y,x]<22):
+          HOG[i][2][0]+=strength_map[y,x]
+        if(orient_map[y,x]>22 and orient_map[y,x]<44):
+          HOG[i][2][1]+=strength_map[y,x]
+        if(orient_map[y,x]>44 and orient_map[y,x]<66):
+          HOG[i][2][2]+=strength_map[y,x]
+        if(orient_map[y,x]>66 and orient_map[y,x]<88):
+          HOG[i][2][3]+=strength_map[y,x]
+        if(orient_map[y,x]>88 and orient_map[y,x]<110):
+          HOG[i][2][4]+=strength_map[y,x]
+        if(orient_map[y,x]>110 and orient_map[y,x]<132):
+          HOG[i][2][5]+=strength_map[y,x]
+        if(orient_map[y,x]>132 and orient_map[y,x]<154):
+          HOG[i][2][6]+=strength_map[y,x]
+        if(orient_map[y,x]>154 and orient_map[y,x]<180):
+          HOG[i][2][7]+=strength_map[y,x]
+      if(y >14 and x>14):
+        if(orient_map[y,x]>0 and orient_map[y,x]<22):
+          HOG[i][3][0]+=strength_map[y,x]
+        if(orient_map[y,x]>22 and orient_map[y,x]<44):
+          HOG[i][3][1]+=strength_map[y,x]
+        if(orient_map[y,x]>44 and orient_map[y,x]<66):
+          HOG[i][3][2]+=strength_map[y,x]
+        if(orient_map[y,x]>66 and orient_map[y,x]<88):
+          HOG[i][3][3]+=strength_map[y,x]
+        if(orient_map[y,x]>88 and orient_map[y,x]<110):
+          HOG[i][3][4]+=strength_map[y,x]
+        if(orient_map[y,x]>110 and orient_map[y,x]<132):
+          HOG[i][3][5]+=strength_map[y,x]
+        if(orient_map[y,x]>132 and orient_map[y,x]<154):
+          HOG[i][3][6]+=strength_map[y,x]
+        if(orient_map[y,x]>154 and orient_map[y,x]<180):
+          HOG[i][3][7]+=strength_map[y,x]
+plt.imshow(orient_map,cmap='gray')
+print(HOG)
+
+# 대표값 지정
+k=10
+accuracy=0
+n=0
+acc1=[]
+while(True):
+  n=n+1
+  means=np.zeros((k,784))
+  refer=np.zeros((k))
+  for i in range (k):
+    random_index=np.random.choice(70000,1)
+    means[i]=mnist_data[random_index]
+    refer[i]=mnist_target[random_index]
+  #means[0],means[1],means[2],means[3],means[4],means[5],means[6],means[7],means[8],means[9]=data[1],data[3],data[5],data[7],data[2],data[0],data[13],data[15],data[17],data[4]
+
+  z=np.zeros((k,4,8))
+  for i in range(k):
+    X=means[i]
+    X=X.reshape(28,28)
+    X0,X1,X2,X3=X[0:14,0:14],X[0:14,14:28],X[14:28,0:14],X[14:28,14:28]
+    sobel_mx=np.array([[-1,0,1],[-1,0,1],[-1,0,1]])
+    sobel_my=np.array([[-1,-1,-1],[0,0,0],[1,1,1]])
+    grad_map_dx=np.zeros((28,28))
+    grad_map_dy=np.zeros((28,28))
+    strength_map=np.zeros((28,28),dtype='float')
+    orient_map=np.zeros((28,28),dtype='int')
+    X=np.pad(X,((1,1),(1,1)),'edge')
+    for y in range(0,28):
+      for x in range(0,28):
+        grad_map_dx[y,x]=np.sum(sobel_mx[0:3,0:3]*X[y:y+3,x:x+3])
+        grad_map_dy[y,x]=np.sum(sobel_my[0:3,0:3]*X[y:y+3,x:x+3])
+        strength_map[y,x]=math.sqrt(grad_map_dx[y,x]**2+grad_map_dy[y,x]**2)
+        if(grad_map_dy[y,x]==0):
+          grad_map_dy[y,x]=1
+        if(grad_map_dx[y,x]==0):
+          grad_map_dx[y,x]=1
+        orient_map[y,x]=(math.atan(grad_map_dy[y,x]/grad_map_dx[y,x])*(180/3.14))+90
+        if(grad_map_dy[y,x]==1):
+          grad_map_dy[y,x]=0
+        if(grad_map_dx[y,x]==1):
+          grad_map_dx[y,x]=0
+        
+
+    for y in range(0,28):
+      for x in range(0,28):
+        if(y <14 and x<14):
+          if(orient_map[y,x]>0 and orient_map[y,x]<22):
+            z[i][0][0]+=strength_map[y,x]
+          if(orient_map[y,x]>22 and orient_map[y,x]<44):
+            z[i][0][1]+=strength_map[y,x]
+          if(orient_map[y,x]>44 and orient_map[y,x]<66):
+            z[i][0][2]+=strength_map[y,x]
+          if(orient_map[y,x]>66 and orient_map[y,x]<88):
+            z[i][0][3]+=strength_map[y,x]
+          if(orient_map[y,x]>88 and orient_map[y,x]<110):
+            z[i][0][4]+=strength_map[y,x]
+          if(orient_map[y,x]>110 and orient_map[y,x]<132):
+            z[i][0][5]+=strength_map[y,x]
+          if(orient_map[y,x]>132 and orient_map[y,x]<154):
+            z[i][0][6]+=strength_map[y,x]
+          if(orient_map[y,x]>154 and orient_map[y,x]<180):
+            z[i][0][7]+=strength_map[y,x]
+        if(y >14 and x<14):
+          if(orient_map[y,x]>0 and orient_map[y,x]<22):
+            z[i][1][0]+=strength_map[y,x]
+          if(orient_map[y,x]>22 and orient_map[y,x]<44):
+            z[i][1][1]+=strength_map[y,x]
+          if(orient_map[y,x]>44 and orient_map[y,x]<66):
+            z[i][1][2]+=strength_map[y,x]
+          if(orient_map[y,x]>66 and orient_map[y,x]<88):
+            z[1][3]+=strength_map[y,x]
+          if(orient_map[y,x]>88 and orient_map[y,x]<110):
+            z[i][1][4]+=strength_map[y,x]
+          if(orient_map[y,x]>110 and orient_map[y,x]<132):
+            z[i][1][5]+=strength_map[y,x]
+          if(orient_map[y,x]>132 and orient_map[y,x]<154):
+            z[i][1][6]+=strength_map[y,x]
+          if(orient_map[y,x]>154 and orient_map[y,x]<180):
+            z[i][1][7]+=strength_map[y,x]
+        if(y <14 and x>14):
+          if(orient_map[y,x]>0 and orient_map[y,x]<22):
+            z[i][2][0]+=strength_map[y,x]
+          if(orient_map[y,x]>22 and orient_map[y,x]<44):
+            z[i][2][1]+=strength_map[y,x]
+          if(orient_map[y,x]>44 and orient_map[y,x]<66):
+            z[i][2][2]+=strength_map[y,x]
+          if(orient_map[y,x]>66 and orient_map[y,x]<88):
+            z[i][2][3]+=strength_map[y,x]
+          if(orient_map[y,x]>88 and orient_map[y,x]<110):
+            z[i][2][4]+=strength_map[y,x]
+          if(orient_map[y,x]>110 and orient_map[y,x]<132):
+            z[i][2][5]+=strength_map[y,x]
+          if(orient_map[y,x]>132 and orient_map[y,x]<154):
+            z[i][2][6]+=strength_map[y,x]
+          if(orient_map[y,x]>154 and orient_map[y,x]<180):
+            z[i][2][7]+=strength_map[y,x]
+        if(y >14 and x>14):
+          if(orient_map[y,x]>0 and orient_map[y,x]<22):
+            z[i][3][0]+=strength_map[y,x]
+          if(orient_map[y,x]>22 and orient_map[y,x]<44):
+            z[i][3][1]+=strength_map[y,x]
+          if(orient_map[y,x]>44 and orient_map[y,x]<66):
+            z[i][3][2]+=strength_map[y,x]
+          if(orient_map[y,x]>66 and orient_map[y,x]<88):
+            z[i][3][3]+=strength_map[y,x]
+          if(orient_map[y,x]>88 and orient_map[y,x]<110):
+            z[i][3][4]+=strength_map[y,x]
+          if(orient_map[y,x]>110 and orient_map[y,x]<132):
+            z[i][3][5]+=strength_map[y,x]
+          if(orient_map[y,x]>132 and orient_map[y,x]<154):
+            z[i][3][6]+=strength_map[y,x]
+          if(orient_map[y,x]>154 and orient_map[y,x]<180):
+            z[i][3][7]+=strength_map[y,x]
+  #print(z)
+
+ # k-means
+
+  k=10
+  input_size=10000
+  dist=np.zeros(k)
+  index=np.zeros(input_size)
+  before=np.zeros((k),dtype='int')
+
+  while(True):
+    if(z.tolist()==before.tolist()):
+      break
+    before=z.copy()
+    #print(1)
+    for i in range(input_size):
+      for K in range(k):
+        dist[K]=np.sum((HOG[i]-z[K])**2)
+      index[i]=np.argmin(dist)
+    z=np.zeros((k,4,8),dtype='int')
+    counter=np.zeros((k))
+    for i in range (input_size):
+      for K in range(k):
+        if index[i]==K:
+          counter[K]+=1
+          z[K]=z[K]+HOG[i]
+    #print(counter)
+    for K in range(k):
+      z[K]=z[K]/counter[K]
+
+  target=np.array(target,dtype='int')
+  test_data=HOG
+  it=input_size
+  output=np.zeros((it),dtype='int')
+  for i in range(it):
+    for K in range(k):
+      dist[K]=np.sum((test_data[i]-z[K])**2)
+    output[i]=np.argmin(dist)
+  right=0
+  for i in range (input_size):
+    #print(output[i], target[i]) 
+    if(refer[output[i]]==target[i]):
+      right+=1
+  
+  accuracy=right/input_size
+  acc1.append(accuracy)
+  print("iteration:",n, "/ K :",k,"/ accuracy :",accuracy)
+  if(n==10): break

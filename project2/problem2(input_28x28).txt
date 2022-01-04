@@ -1,0 +1,84 @@
+import sklearn.datasets as dataset
+mnist=dataset.fetch_openml('mnist_784')
+#iris=dataset.load_iris()
+
+import numpy as np
+import matplotlib.pyplot as plt
+
+mnist_data = mnist.data
+mnist_target= mnist.target
+print('mnist data shape :',mnist_data.shape)
+print('mnist target shape :',mnist_target.shape)
+
+random_index=np.random.choice(70000,1)
+mnist_sample=mnist_data[random_index].reshape(28,28)
+plt.imshow(mnist_sample, cmap='gray')
+
+data,target=mnist_data[0:10000], mnist_target[0:10000]
+
+
+#2-1 성공
+import random
+import numpy as np
+import matplotlib.pyplot as plt
+import math
+import cv2
+
+
+X=data
+k=10
+acc1=[]
+n=0
+while(True):
+  n=n+1
+  input_size=10000
+  means=np.zeros((k,784))
+  refer=np.zeros((k))
+  for i in range (k):
+    random_index=np.random.choice(70000,1)
+    means[i]=mnist_data[random_index]
+    refer[i]=mnist_target[random_index]
+  #means[0],means[1],means[2],means[3],means[4],means[5],means[6],means[7],means[8],means[9]=data[1],data[3],data[5],data[7],data[2],data[0],data[13],data[15],data[17],data[4]
+
+  dist=np.zeros(k)
+  index=np.zeros(input_size)
+  before=np.zeros((k),dtype='int')
+  while(True):
+    if(means.tolist()==before.tolist()):
+      break
+    before=means.copy()
+    for i in range(input_size):
+      for K in range(k):
+        dist[K]=np.sum((X[i]-means[K])**2)
+      
+      index[i]=np.argmin(dist)
+    #print(index)
+    means=np.zeros((k,784),dtype='int')
+    counter=np.zeros((k))
+    for i in range (input_size):
+      for K in range(k):
+        if index[i]==K:
+          counter[K]+=1
+          means[K]=means[K]+X[i]
+    for K in range(k):
+      means[K]=means[K]/counter[K]
+    #print(means)
+    #print()
+
+  test_data=mnist.data
+  it=10000
+  output=np.zeros((it),dtype='int')
+  for i in range(it):
+    for K in range(k):
+      dist[K]=np.sum((test_data[i]-means[K])**2)
+    output[i]=np.argmin(dist)
+  right=0
+  target=np.array(target,dtype='int')
+  for i in range (10000):
+    #print(output[i], target[i]) 
+    if(target[i]==refer[output[i]]):
+      right+=1
+  accuracy=right/input_size
+  acc.append(accuracy)
+  print("iteration:",n, "/ K :",k,"/ accuracy :",accuracy)
+  if(n==10): break

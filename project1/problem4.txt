@@ -1,0 +1,60 @@
+image = cv2.imread('/content/drive/MyDrive/image/lena(18).bmp',cv2.IMREAD_UNCHANGED)
+image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+print(image.shape)
+def detector(image):
+  row,col,channel=image.shape
+  edge_map=np.zeros((row,col))
+  for y in range(row):
+    for x in range(col):
+      if(image[y,x,2]>220 or image[y,x,0]<40):
+        for i in range(-2,3):
+          for j in range(-2,3):
+            edge_map[y+i,x+j]=255
+        
+            
+        
+  return edge_map
+
+def B_filtering(ix,edge_map,K,s):
+  Gs=np.zeros((K,K))
+  row,col,channel=ix.shape
+  T=K//2
+  img=np.pad(ix, (T, T), 'edge')
+  ix_padded = np.pad(ix,((T, T),(T, T), (0, 0)), 'edge')
+  padded_image=np.pad(ix,(K,K),'edge')
+  ixh=np.zeros((row,col,channel),dtype=int)
+  for i in range(0,K):
+    for j in range(0,2):
+      Gs[i,j]=(np.exp(-((i-T)**2)/(2*(s**2)))) 
+
+  G=np.zeros((K,2))
+  Gr=np.zeros((row+2*T,col+2*T))
+  output_img=np.zeros((row,col,channel),dtype=int)
+
+                
+  ix= np.pad(ix,((T, T),(T, T), (0, 0)), 'edge')
+  for c in range(channel):
+    for i in range(T,row+T):
+      for j in range(T,col+T):
+        if(edge_map[i-T,j-T]==255):
+          ix_padded[i,j,c]=0
+  for c in range(channel):
+    for i in range(T,row+T):
+      for j in range(T,col+T):
+        if(edge_map[i-T,j-T]==255):
+          for p in range(i-T,i+T):
+            for q in range(j-1,j+1):
+              t=(ix_padded[p,q,c])
+              G[(p-(i-T)),(q-(j-1))]=t*Gs[(p-(i-T)),(q-(j-1))]
+             
+          G=G/np.sum(G)
+          product=ix_padded[i-T:i+T,j-1:j+1,c]*G
+          ix[i,j,c]=product.sum()
+  return ix
+
+edge_map=detector(image)
+
+filtered_image=B_filtering(image,edge_map,46,1)
+#plt.imshow(edge_map,cmap='gray')
+PSNR(image,filtered_image)
+plt.imshow(filtered_image)

@@ -1,0 +1,104 @@
+from google.colab import drive
+drive.mount('/content/drive')
+import random
+import numpy as np
+import matplotlib.pyplot as plt
+import math
+import cv2
+#image = cv2.imread('/content/drive/MyDrive/image/lena_grey.bmp',cv2.IMREAD_GRAYSCALE)
+image = cv2.imread('/content/drive/MyDrive/image/lena.bmp',cv2.IMREAD_UNCHANGED)
+image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+
+def impulse_noise(image,p):
+    row,col,channel=image.shape
+    number_of_pixels = round(512*512*p/2)
+    for i in range(number_of_pixels):
+        x=random.randint(0, row - 1)
+        y=random.randint(0, col - 1)
+        for c in range(channel):
+          image[y][x][c] = 255
+
+    for i in range(number_of_pixels):
+        x=random.randint(0, row - 1)
+        y=random.randint(0, col - 1)
+        for c in range(channel):
+          image[y][x][c] = 0
+    
+    return image
+def gaussian_noise(img,mean,std):
+  gaussian_noisy_img = np.random.normal(mean, std, image.shape)
+  return gaussian_noisy_img
+def noisemaker(M,N,std):
+  image=np.random.normal(0,std,size=(M,N,3))
+  return image
+def PSNR(img,noisy_image):
+  mse=0
+  row,col,channel=img.shape
+  for c in range(channel):
+    for i in range(0,512):
+      for j in range(0,512):
+        mse+=pow((img[i,j,c]-noisy_image[i,j,c]),2)/row/col/3
+  print("PSNR=",10*math.log10(255*255/mse))
+
+def G_filtering(image,K,std):
+  row,col,channel=image.shape
+  G_filter=np.zeros((K,K),dtype=float)
+  a=0
+  T=K//2
+  for i in range(0,K):
+    for j in range(0,K):
+      G_filter[i,j]=np.exp(-((i-(K//2))**2+(j-(K//2))**2)/(2*(std**2)))
+  G_filter=G_filter/np.sum(G_filter)
+  for i in range(0,K):
+    for j in range(0,K):
+      print(G_filter[i,j],end='')
+    print()
+  padded_image=np.pad(image, ((T, T),(T,T),(0,0)), 'edge')
+  output_image=np.zeros((row,col,channel),dtype=int)
+  for c in range(channel):
+    for i in range(T,row+T):
+      for j in range(T,col+T):
+            product=padded_image[i-T:i+T,j-T:j+T,c]*G_filter
+            output_image[i-T,j-T,c]=product.sum()
+  return output_image
+
+def B_filtering(ix,K,s,r):
+  Gs=np.zeros((K,K))
+  row,col,channel=ix.shape
+  T=K//2
+  img=np.pad(ix, (T, T), 'edge')
+  padded_image=np.pad(ix,((T,T),(T,T),(0,0)),'edge')
+  ixh=np.zeros((row,col))
+  for i in range(0,K):
+    for j in range(0,K):
+      Gs[i,j]=(np.exp(-((i-T)**2+(j-T)**2)/(2*(s**2)))) 
+
+  G=np.zeros((K,K))
+  Gr=np.zeros((row+K,col+K))
+  output_img=np.zeros((row,col,channel),dtype=int)
+  
+  for c in range(channel):
+    for i in range(T,row+T):
+      for j in range(T,col+T):
+        for p in range(i-T,i+T):
+          for q in range(j-T,j+T):
+            region=img[p,q,c]-img[i,j,c]
+            t=np.exp(-(region*region)/(2*(r*r)))
+            G[(p-(i-T)),(q-(j-T))]=t*Gs[(p-(i-T)),(q-(j-T))]
+        G=G/np.sum(G)
+        product=padded_image[i-T:i+T,j-T:j+T,c]*G
+        output_img[i-T,j-T,c]=product.sum()
+
+  return output_img
+
+
+impulse_noisy_image=impulse_noise(image,0.1)
+gaussian_noisy_image=image+noisemaker(512,512,50)
+noisy=noisemaker(512,512,1)
+#plt.imshow(gaussian_noisy_image.astype(int))
+#plt.imshow(noisy,cmap='gray')
+#PSNR(image,gaussian_noisy_image)
+
+filtered_img=B_filtering(gaussian_noisy_image,8,1,1)
+PSNR(image,filtered_img)
+plt.imshow(filtered_img)

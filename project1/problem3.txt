@@ -1,0 +1,83 @@
+
+image = cv2.imread('/content/drive/MyDrive/image/lena.bmp',cv2.IMREAD_UNCHANGED)
+image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+pi=3.141592
+t=30
+
+def tf_system(image,K,theta):
+  row, col,channel = image.shape
+  matrix=np.array([[K*math.cos(pi*(theta/180))    ,-math.sin(pi*(theta/180)) ,0],[  math.sin(pi*(theta/180))    ,K*math.cos(pi*(theta/180)) ,0],[  0 ,0 ,1]])
+  matrix_inv=np.linalg.inv(matrix)
+  xmin=0
+  ymin=0
+  for i in range (0,row):
+    for j in range (0,col):
+      point=matrix@np.array([i,j,1])
+      x=round(point[0])
+      y=round(point[1])
+      #print(x,y)
+      if(x<=xmin): xmin=x
+      if(y<=ymin): ymin=y
+  point1=matrix@np.array([0,0,1])
+  point3=matrix@np.array([512,512,1])
+  K1=abs(round(point1[0]-point3[0]))
+  K2=abs(round(point1[1]-point3[1]))
+  if(K1>K2):K=K1
+  else: K=K2
+  
+  t_image=np.zeros((K+1,K+1,channel),dtype=int)
+  for c in range (channel):
+    for i in range (0,row):
+      for j in range (0,col):
+        point=matrix@np.array([i,j,1])
+        x=round(point[0])
+        y=round(point[1])
+        t_image[x-xmin][y-ymin][c]=image[i][j][c]
+
+  return t_image,xmin,ymin,K
+
+def NNinterpolation(t_image,image,K,theta,xmin,ymin,N):
+  row, col, channel = image.shape
+  matrix=np.array([[K*math.cos(pi*(theta/180))    ,-math.sin(pi*(theta/180)) ,0],[  math.sin(pi*(theta/180))    ,K*math.cos(pi*(theta/180)) ,0],[  0 ,0 ,1]])
+  matrix_inv=np.linalg.inv(matrix)
+  for c in range (channel):
+    for i in range(0,N):
+      for j in range(0,N):
+        if(t_image[i,j,c]==0):
+          point=matrix_inv@np.transpose([i+xmin,j+ymin,1])
+          x=round(point[0])
+          y=round(point[1])
+          if(x>0 and x<row and y>0 and y<col):
+            t_image[i,j,c]=image[x,y,c]
+  return t_image
+
+def bilinear(t_image,image,K,theta,xmin,ymin,N):
+  
+  row, col,channel = image.shape
+  print(t_image.shape)
+  image=np.pad(image,(0,1),'edge')
+  matrix=np.array([[K*math.cos(pi*(theta/180))    ,-math.sin(pi*(theta/180)) ,0],[  math.sin(pi*(theta/180))    ,K*math.cos(pi*(theta/180)) ,0],[  0 ,0 ,1]])
+  matrix_inv=np.linalg.inv(matrix)
+  for c in range(channel):
+    for i in range(0,N):
+      for j in range(0,N):
+        if(t_image[i,j,c]==0):
+          point1=matrix_inv@np.transpose([i+xmin,j+ymin,1])
+          x,y=point1[0],point1[1]
+          x1,y1=math.floor(point1[0]),math.floor(point1[1])
+          x2,y2=x1+1,y1+1
+          a=x-x1
+          b=y-y1
+          if(x1>0 and x1<row and y1>0 and y1<col):
+            t_image[i,j,c] = ((1-a)*((1-b)*image[x1,y1,c]+(b)*image[x1,y2,c]) + a*((1-b)*image[x2,y1,c]+b*image[x2,y2,c]))
+  return t_image
+
+t_image,xmin,ymin,N=tf_system(image,2,0)
+t_image=bilinear(t_image,image,2,0,xmin,ymin,N)
+
+plt.imshow(t_image)
+
+
+
+
+

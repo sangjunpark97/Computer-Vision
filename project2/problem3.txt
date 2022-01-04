@@ -1,0 +1,95 @@
+
+import sklearn.datasets as dataset
+import numpy as np
+#mnist=dataset.fetch_openml('mnist_784')
+iris=dataset.load_iris()
+
+iris_data=iris.data[0:100]
+iris_target=iris.target[0:100]
+print('iris data shape :',iris_data.shape)
+print('iris target shape:', iris_target.shape)
+
+
+iris_target=iris_target.reshape(100,1)
+iris=np.concatenate((iris_data,iris_target), axis=1)
+
+np.random.shuffle(iris)
+train_set,test_set=iris[0:80],iris[80:100]
+x_train,y_train = np.hsplit(train_set,[4])
+y_train=y_train.reshape(80)
+x_test,y_test = np.hsplit(test_set,[4])
+y_test=y_test.reshape(20)
+print(y_train)
+
+
+def sigmoid(x):
+  return 1 / (1 + np.exp(-x))
+
+def d_sigmoid(x):
+  return x * (1 - x)
+
+def mean_squared_error(y, t):
+    return ((y-t)**2).mean(axis=None)
+
+def train(x,y,epoch):
+  n=y.shape[0]
+  weight=np.random.randn(5)
+  output=np.zeros((n))
+  for k in range(epoch):
+    for i in range(n):
+      t=np.insert(x[i],0,1)
+      z=np.dot(t,weight)
+      output=sigmoid(z)
+      e=y[i]-output
+      weight=weight-0.01*e*d_sigmoid(t)
+  return weight
+
+
+def test(x,y,weight):
+  n=y.shape[0]
+  error=np.zeros((n))
+  output=np.zeros((n))
+  right=0
+  for i in range(n):
+    t=np.insert(x[i],0,1)
+    z=np.dot(t,weight)
+    output[i]=sigmoid(z)
+    error[i]=(output[i]-y[i])**2
+    if(output[i]<0.5):
+      output[i]=0 
+    else:
+      output[i]=1
+    if(output[i]==y[i]):
+      right+=1
+    
+    print("predict :",output[i],"/ target :",y[i])
+    
+  cost=np.sum(error)/n
+  acc=right/n*100
+  print("accuracy :",acc,"%","  error :",cost)
+  return acc,cost
+
+acc=[]
+loss=[]
+for epoch in range(100):
+  weight=train(x_train,y_train,epoch)
+  accuracy,cost=test(x_train,y_train,weight)
+  acc.append(accuracy)
+  loss.append(cost)
+
+
+import matplotlib.pyplot as plt
+plt.figure(figsize=(8, 8))
+plt.subplot(2, 1, 1)
+plt.plot(acc, label='test Accuracy')
+plt.legend(loc='lower right')
+plt.ylabel('Accuracy')
+plt.title('Test Accuracy')
+plt.subplot(2, 1, 2)
+plt.plot(loss, label='test Loss')
+plt.legend(loc='upper right')
+plt.ylabel('MSE') 
+plt.ylim([0,0.5])
+plt.title('test error')
+plt.xlabel('epoch')
+plt.show()

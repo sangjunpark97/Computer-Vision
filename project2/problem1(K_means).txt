@@ -1,0 +1,74 @@
+# 1-1 완성본
+import random
+import numpy as np
+import matplotlib.pyplot as plt
+import math
+import cv2
+#image = cv2.imread('/content/drive/MyDrive/image/house.bmp',cv2.IMREAD_UNCHANGED)
+#image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+pixels=[]
+X=[]
+X=np.array(X)
+row, col, channel=image.shape
+X=image.reshape(row*col,3) # RGB value가지는 vector로 reshape
+k=15  # k 값 지정
+
+means=np.zeros((k,3),dtype='int')
+M=np.zeros(row*col)
+
+# X로부터 대표값 (means) 무작위로 지정
+for i in range(k):
+  rand=np.random.randint(0, col*row)
+  means[i]=X[rand]
+
+dist=np.zeros(k)
+index=np.zeros(row*col)  
+before=np.zeros((k,3),dtype='int')
+
+while(True):
+  # 이전의 대표값과 현재 대표값이 같다면 break (수렴한 상태)
+  if(means.tolist()==before.tolist()):
+    break
+  before=means.copy()
+  # input X와 means의 거리를 구하고 군집화
+  for i in range(row*col):
+    for K in range(k):
+      dist[K]=np.sqrt(np.sum((X[i,:]-means[K,:])**2))
+    index[i]=np.argmin(dist)
+  means=np.zeros((k,3),dtype='int')
+  counter=np.zeros((k))
+  # 군집화된 vector들의 평균을 구해 대표값으로 update
+  for i in range (row*col):
+    for K in range(k):
+      if index[i]==K:
+        counter[K]+=1
+        means[K]=means[K]+X[i]
+  for K in range(k):
+    means[K]=means[K]/counter[K]
+    
+  print(means)
+  print()
+
+for i in range(row*col):
+  for K in range(k):
+    if index[i]==K:
+      X[i]=means[K]
+X=X.reshape(row,col,3)
+plt.imshow(X)
+
+
+
+# 3D 그래프 결과 보기 
+
+image = cv2.imread('/content/drive/MyDrive/image/house.bmp',cv2.IMREAD_UNCHANGED)
+image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+
+fig = plt.figure(figsize=(10,10))
+ax = fig.add_subplot(111, projection='3d')
+for i in range(k):
+    ax.scatter(means[i][0],means[i][1],means[i][2],s=100,alpha=1, cmap=plt.cm.Reds, edgecolor='b')
+ax.scatter(image[:,:,0],image[:,:,1],image[:,:,2],  c='yellow', s=2, alpha=0.05, cmap = plt.cm.Greys)
+ax.set_xlabel('R')
+ax.set_ylabel('G') 
+ax.set_zlabel('B')
+plt.show()
